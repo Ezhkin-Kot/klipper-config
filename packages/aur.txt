@@ -1,0 +1,2 @@
+# Installed by install.sh --setup with the AUR helper found in PATH (yay or paru)
+ustreamer

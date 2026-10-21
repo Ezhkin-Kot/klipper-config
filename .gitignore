@@ -1,3 +1,12 @@
 # Backups that Klipper creates on SAVE_CONFIG
 klipper/var/lib/klipper/printer_data/config/printer-*.cfg
 *.bak
+
+# Output of install-fluidd.sh --zip
+fluidd/*.zip
+
+# Host-specific Moonraker settings (see examples/moonraker-local.conf.example)
+moonraker-local.conf
+
+# Output of firmware/build.sh
+firmware/*.bin

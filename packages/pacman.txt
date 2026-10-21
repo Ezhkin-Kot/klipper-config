@@ -1,0 +1,16 @@
+# Installed by install.sh --setup: sudo pacman -S --needed - < packages/pacman.txt
+# (base system, bootloader, network and VM guest tools are not listed: they belong to the OS install)
+klipper
+base-devel
+git
+stow
+docker
+docker-compose
+v4l-utils
+usbutils
+nodejs
+npm
+unzip
+zip
+python
+python-virtualenv

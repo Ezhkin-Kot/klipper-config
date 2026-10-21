@@ -1,0 +1,16 @@
+[Unit]
+Description=API Server for Klipper
+Requires=klipper.service
+After=network-online.target klipper.service
+
+[Service]
+Type=simple
+User=klipper
+RemainAfterExit=no
+WorkingDirectory=/var/lib/klipper/moonraker
+ExecStart=/var/lib/klipper/moonraker-env/bin/python /var/lib/klipper/moonraker/moonraker/moonraker.py -c /etc/klipper/moonraker.conf -l /var/log/moonraker/moonraker.log
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

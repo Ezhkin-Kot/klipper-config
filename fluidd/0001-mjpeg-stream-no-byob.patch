@@ -1,0 +1,30 @@
+diff --git a/src/workers/mjpegStream.ts b/src/workers/mjpegStream.ts
+index 7394fa0..59d08c5 100644
+--- a/src/workers/mjpegStream.ts
++++ b/src/workers/mjpegStream.ts
+@@ -1,5 +1,3 @@
+-const chunkSize = 8192 // 8KB chunks for good performance
+-
+ const headerEndPattern = new Uint8Array([13, 10, 13, 10]) // \r\n\r\n
+ 
+ const indexOfBytes = (buffer: Uint8Array, pattern: Uint8Array, startIndex?: number): number => {
+@@ -41,16 +39,14 @@ const mjpegStream = async (url: string, sendFrame: (data: Uint8Array<ArrayBuffer
+ 
+   const boundaryBytes = new TextEncoder().encode(`--${boundary}`)
+ 
+-  const reader = response.body.getReader({
+-    mode: 'byob'
+-  })
++  // WebKit/Safari does not support BYOB readers on fetch bodies
++  const reader = response.body.getReader()
+ 
+   let buffer = new Uint8Array(0)
+ 
+   try {
+     while (true) {
+-      const chunk = new Uint8Array(chunkSize)
+-      const { done, value } = await reader.read(chunk)
++      const { done, value } = await reader.read()
+ 
+       if (done) {
+         break

@@ -4,14 +4,22 @@ Configuration for the klipper VM (Arch Linux): Klipper, camera, Caddy.
 
 ## Layout
 
-The `klipper/` and `ustreamer/` directories are [GNU Stow](https://www.gnu.org/software/stow/) packages:
-inside them the path mirrors the path from `/`, and `install.sh` lays them out with symlinks.
+The `klipper/`, `ustreamer/` and `moonraker/` directories are [GNU Stow](https://www.gnu.org/software/stow/)
+packages: inside them the path mirrors the path from `/`, and `install.sh` lays them out with symlinks.
 
 ```
 klipper/var/lib/klipper/printer_data/config/   -> /var/lib/klipper/printer_data/config (symlink to the directory)
 ustreamer/etc/systemd/system/ustreamer.service -> /etc/systemd/system/ustreamer.service
+moonraker/etc/klipper/moonraker.conf           -> /etc/klipper/moonraker.conf
+moonraker/etc/systemd/system/moonraker.service -> /etc/systemd/system/moonraker.service
+moonraker/etc/polkit-1/rules.d/49-moonraker.rules
+examples/moonraker-local.conf.example          -> copied to /etc/klipper/moonraker-local.conf (not tracked)
 caddy/                                         -> not Stow, run straight from the repository
-install.sh
+fluidd/                                        -> not Stow, Fluidd patch + build/install script
+firmware/                                      -> MCU firmware config and build script
+packages/                                      -> pacman / AUR package lists
+scripts/                                       -> Moonraker and Mainsail installers
+install.sh                                     -> Stow packages; with --setup, everything above on a fresh system
 ```
 
 Calibration results (`SAVE_CONFIG`) are stored in `printer.cfg` in the repository. The
@@ -27,9 +35,37 @@ sudo chown -R "$USER":"$USER" /opt/klipper-config
 cd /opt/klipper-config && ./install.sh
 ```
 
-If `stow` complains about a conflict with an existing file (for example
-`/etc/systemd/system/ustreamer.service`), delete that file by hand and run
-`install.sh` again: Stow never overwrites anything.
+Existing regular files that Stow would replace (for example a hand-written
+`moonraker.conf`) are moved aside to `<name>.bak`; Stow itself never overwrites anything.
+
+`/etc/klipper/moonraker-local.conf` holds the host-specific `[authorization]` section
+(trusted clients, CORS domains). It is created from `examples/moonraker-local.conf.example`
+and is not tracked: add the addresses you open Fluidd/Mainsail from.
+
+## From scratch
+
+On a fresh Arch Linux install:
+
+```bash
+sudo git clone git@github.com:Ezhkin-Kot/klipper-config /opt/klipper-config
+cd /opt/klipper-config && ./install.sh --setup
+```
+
+`install.sh` without arguments only lays out the configs and is safe to re-run. `--setup` additionally installs `packages/`, creates the `klipper` user, pins the `klipper` package with
+`IgnorePkg` (host and MCU firmware must be the same version), installs Moonraker, then lays
+out the configs, installs Fluidd, Mainsail and starts Caddy. Installers in `scripts/` and `fluidd/` can also be run alone.
+
+## MCU firmware
+
+`firmware/mks-robin-nano-v1.3.config` is the Klipper `.config` for the MKS Robin Nano v1.3
+(STM32F407, 32 KiB bootloader offset, 8 MHz crystal, USART3 PB11/PB10). It replaces `make menuconfig`:
+
+```bash
+cd /opt/klipper-config/firmware && ./build.sh        # sources from /opt/klipper
+```
+
+Copy the resulting `Robin_nano35.bin` to a FAT32 microSD card, power-cycle the printer with the
+card inserted, then power-cycle again after flashing. Rebuild and reflash after every `klipper` package update.
 
 ## Caddy
 
@@ -42,8 +78,31 @@ docker compose logs --tail 20
 Rollback: `docker compose down && sudo systemctl enable --now nginx`.
 Caddy listens on `:80` (Fluidd) and `:81` (Mainsail) and serves static files from `/var/www`.
 
+## Fluidd with a WebKit patch
+
+Fluidd's `MJPEG Stream` camera mode does not work in WebKit (Safari, OrcaSlicer) out of the box.
+`fluidd/` contains a small patch for `src/workers/mjpegStream.ts` and a script that builds Fluidd
+from source and installs it into `/var/www/fluidd`:
+
+```bash
+sudo pacman -S --needed git nodejs npm
+cd /opt/klipper-config/fluidd && ./install-fluidd.sh        # build and install
+```
+
+The build needs about 1 GB of RAM and several minutes of CPU. On a weak board (SBC), build on a
+desktop instead and only install the archive on the board (needs just `unzip`):
+
+```bash
+./install-fluidd.sh --zip [tag]                 # on the desktop: writes fluidd-<tag>-patched.zip
+scp fluidd-*-patched.zip user@board:            # copy it over
+./install-fluidd.sh --install-zip fluidd-<tag>-patched.zip   # on the board
+```
+
+The camera stream URL in Fluidd must be `/webcam/fluidd-stream`: Caddy serves the same stream
+there as `multipart/mixed`, because WebKit also aborts `fetch` on `multipart/x-mixed-replace`.
+The previous version is kept in `/var/www/fluidd.bak`.
+
 ## Not in this repository
 
-- Fluidd/Mainsail (`/var/www/*`): releases; Fluidd with a patch for WebKit.
-- Board firmware, Klipper/Moonraker (package and git repository).
-- `moonraker.conf` and the Moonraker polkit rule: not moved here yet (TODO).
+- The Moonraker data (history database).
+- Slicer profiles.

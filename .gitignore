@@ -1,0 +1,3 @@
+# Backups that Klipper creates on SAVE_CONFIG
+klipper/var/lib/klipper/printer_data/config/printer-*.cfg
+*.bak

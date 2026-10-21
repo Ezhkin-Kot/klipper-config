@@ -1,0 +1,47 @@
+{
+	auto_https off
+}
+
+# Moonraker and the camera, shared by Fluidd and Mainsail
+(printer) {
+	@moonraker path /websocket /printer/* /api/* /access/* /machine/* /server/*
+	handle @moonraker {
+		reverse_proxy 127.0.0.1:7125
+	}
+
+	# For Fluidd's MJPEG Stream mode in Safari/OrcaSlicer (WebKit): the same stream, but with
+	# Content-Type multipart/mixed instead of multipart/x-mixed-replace
+	handle /webcam/fluidd-stream {
+		rewrite * /stream
+		reverse_proxy 127.0.0.1:8080 {
+			flush_interval -1
+			header_down Content-Type "multipart/mixed;boundary=boundarydonotcross"
+		}
+	}
+
+	handle_path /webcam/* {
+		reverse_proxy 127.0.0.1:8080 {
+			flush_interval -1
+		}
+	}
+}
+
+# Fluidd
+:80 {
+	root * /var/www/fluidd
+	import printer
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+# Mainsail
+:81 {
+	root * /var/www/mainsail
+	import printer
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
+}

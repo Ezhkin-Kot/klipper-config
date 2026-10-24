@@ -63,16 +63,30 @@ installs Mainsail and starts Caddy. The installers in `scripts/` and `fluidd/` c
 
 ## Firmware
 
-The MCU firmware and the Klipper host must be built from the same version, so `klipper` is
-pinned with `IgnorePkg`. After updating it by hand (`sudo pacman -S klipper`), rebuild and flash the board:
+The firmware is built from the Klipper sources, which are installed with the `klipper` package
+in `/opt/klipper`, and `firmware/build.sh` builds them from there. The firmware and the host must
+come from the same Klipper version, so the package is pinned with `IgnorePkg`:
+update it by hand (`sudo pacman -S klipper`), then rebuild and flash the board.
 
 ```bash
-cd ~/klipper-config/firmware && ./build.sh      # builds from /opt/klipper
+cd ~/klipper-config/firmware && ./build.sh
 ```
 
 `mks-robin-nano-v1.3.config` is the Klipper `.config` for the board (STM32F407, 32 KiB bootloader
-offset, 8 MHz crystal, USART3 on PB11/PB10). Copy the resulting `Robin_nano35.bin` to a FAT32
-microSD card, power-cycle the printer with the card inserted and again after flashing finishes.
+offset, 8 MHz crystal, USART3 on PB11/PB10); the script copies it into a temporary copy of the
+sources, so `make menuconfig` is not needed. To flash, copy the resulting `Robin_nano35.bin` to a
+FAT32 microSD card, power-cycle the printer with the card inserted and again after flashing finishes.
+The MCU version shown in Fluidd (System page) should match the host version after that.
+
+Without the package, or for another Klipper version, clone the upstream sources and pass the directory:
+
+```bash
+git clone https://github.com/Klipper3d/klipper ~/klipper && git -C ~/klipper checkout <tag>
+./build.sh ~/klipper
+```
+
+For another board, run `make menuconfig` in a Klipper checkout (the matching example in its `config/`
+directory lists the settings to choose), then replace `mks-robin-nano-v1.3.config` with the resulting `.config`.
 
 ## Camera
 

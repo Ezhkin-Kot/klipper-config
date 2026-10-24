@@ -7,8 +7,9 @@
 #                          user, Moonraker, then the same as above, then Fluidd, Mainsail, Caddy
 #
 # The repository can live in a home directory (e.g. ~/klipper-config): the klipper user
-# and polkitd must read files through the Stow symlinks, so they are granted traverse
-# (execute only, no listing) access to that home directory.
+# must read files through the Stow symlinks, so it is granted traverse (execute only,
+# no listing) access to that home directory.
+# The polkit rule is copied, not symlinked: it grants system privileges and must be root-owned.
 # The Moonraker data (history database) is not restored.
 set -euo pipefail
 
@@ -61,7 +62,7 @@ case "$REPO" in
     /home/*)
         HOME_DIR="$(echo "$REPO" | cut -d/ -f1-3)"
         command -v setfacl >/dev/null || { echo "setfacl is required: sudo pacman -S acl"; exit 1; }
-        for svc_user in klipper polkitd; do
+        for svc_user in klipper; do
             if id "$svc_user" >/dev/null 2>&1; then
                 sudo setfacl -m "u:$svc_user:x" "$HOME_DIR"
             fi
@@ -103,6 +104,12 @@ fi
 sudo chgrp -R klipper "$CONFIG_SRC"
 sudo chmod -R g+rwX "$CONFIG_SRC"
 sudo find "$CONFIG_SRC" -type d -exec chmod g+s {} +
+
+# Replace a symlink left by an older Stow layout with a root-owned copy
+if sudo test -L /etc/polkit-1/rules.d/49-moonraker.rules; then
+    sudo rm /etc/polkit-1/rules.d/49-moonraker.rules
+fi
+sudo install -m 644 -o root -g root "$REPO/polkit/49-moonraker.rules" /etc/polkit-1/rules.d/49-moonraker.rules
 
 sudo systemctl daemon-reload
 sudo systemctl enable ustreamer.service

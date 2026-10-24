@@ -12,7 +12,7 @@ klipper/var/lib/klipper/printer_data/config/   -> /var/lib/klipper/printer_data/
 ustreamer/etc/systemd/system/ustreamer.service -> /etc/systemd/system/ustreamer.service
 moonraker/etc/klipper/moonraker.conf           -> /etc/klipper/moonraker.conf
 moonraker/etc/systemd/system/moonraker.service -> /etc/systemd/system/moonraker.service
-moonraker/etc/polkit-1/rules.d/49-moonraker.rules
+polkit/49-moonraker.rules                      -> /etc/polkit-1/rules.d/ (copied by install.sh, not a symlink)
 moonraker/var/lib/klipper/printer_data/moonraker.asvc  -> services Fluidd may start/stop (ustreamer)
 examples/moonraker-local.conf.example          -> copied to /etc/klipper/moonraker-local.conf (not tracked)
 caddy/                                         -> not Stow, run straight from the repository

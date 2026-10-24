@@ -1,6 +1,5 @@
 # Host-specific Moonraker settings. install.sh copies this file to
-# /etc/klipper/moonraker-local.conf if it does not exist; edit the copy
-# (it is not tracked by this repository).
+# /etc/klipper/moonraker-local.conf if that does not exist yet; edit the copy.
 
 [authorization]
 trusted_clients:
@@ -13,6 +12,6 @@ cors_domains:
     *://localhost
     *://127.0.0.1
     *://*.local
-    # add the addresses and domains you open Fluidd/Mainsail from, for example:
+    # addresses and domains you open Fluidd/Mainsail from, for example:
     # http://192.168.1.10
     # *://*.example.com

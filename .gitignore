@@ -5,7 +5,7 @@ klipper/var/lib/klipper/printer_data/config/printer-*.cfg
 # Output of install-fluidd.sh --zip
 fluidd/*.zip
 
-# Host-specific Moonraker settings (see examples/moonraker-local.conf.example)
+# Host-specific Moonraker settings
 moonraker-local.conf
 
 # Output of firmware/build.sh

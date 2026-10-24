@@ -11,10 +11,10 @@ REPO=https://github.com/Arksine/moonraker.git
 if [ ! -d "$BASE/moonraker/.git" ]; then
     sudo -u klipper git clone "$REPO" "$BASE/moonraker"
 else
-    echo "$BASE/moonraker already exists, only updating the virtualenv"
+    echo "$BASE/moonraker already exists, skipping clone"
 fi
 [ -d "$BASE/moonraker-env" ] || sudo -u klipper python -m venv "$BASE/moonraker-env"
 sudo -u klipper "$BASE/moonraker-env/bin/pip" install -r "$BASE/moonraker/scripts/moonraker-requirements.txt"
 
 sudo install -d -o klipper -g klipper /var/log/moonraker
-echo "Done. Config and unit come from the moonraker Stow package (install.sh)."
+echo "Done. The config and the unit are installed by install.sh."

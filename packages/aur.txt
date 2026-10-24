@@ -1,2 +1,2 @@
-# Installed by install.sh --setup with the AUR helper found in PATH (yay or paru)
+# Installed by install.sh --setup with yay or paru (yay-bin is built if neither is found)
 ustreamer

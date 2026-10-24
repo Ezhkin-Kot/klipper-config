@@ -1,16 +1,10 @@
 #!/usr/bin/env bash
-# Lays out the configs from this repository across the system with GNU Stow (symlinks).
-# Run on the klipper VM as a regular user with sudo.
+# Links the configs from this repository into the system with GNU Stow.
+# Run as a regular user with sudo.
 #
-#   ./install.sh           configs only: Stow packages, permissions, services (safe to re-run)
-#   ./install.sh --setup   first-time setup of a fresh Arch Linux install: packages, klipper
-#                          user, Moonraker, then the same as above, then Fluidd, Mainsail, Caddy
-#
-# The repository can live in a home directory (e.g. ~/klipper-config): the klipper user
-# must read files through the Stow symlinks, so it is granted traverse (execute only,
-# no listing) access to that home directory.
-# The polkit rule is copied, not symlinked: it grants system privileges and must be root-owned.
-# The Moonraker data (history database) is not restored.
+#   ./install.sh           configs only (safe to re-run)
+#   ./install.sh --setup   also set up a fresh Arch Linux install: packages, klipper user,
+#                          Moonraker, Fluidd, Mainsail and Caddy
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")" && pwd)"
@@ -57,16 +51,12 @@ fi
 
 command -v stow >/dev/null || { echo "stow is required: sudo pacman -S stow"; exit 1; }
 
-# Services read the repository through symlinks; a private home directory (mode 700) blocks them
+# The klipper user reads the repository through the symlinks, so it needs to pass through
+# the home directory (execute permission only, no listing)
 case "$REPO" in
     /home/*)
-        HOME_DIR="$(echo "$REPO" | cut -d/ -f1-3)"
         command -v setfacl >/dev/null || { echo "setfacl is required: sudo pacman -S acl"; exit 1; }
-        for svc_user in klipper; do
-            if id "$svc_user" >/dev/null 2>&1; then
-                sudo setfacl -m "u:$svc_user:x" "$HOME_DIR"
-            fi
-        done
+        sudo setfacl -m u:klipper:x "$(echo "$REPO" | cut -d/ -f1-3)"
         ;;
 esac
 
@@ -79,12 +69,10 @@ if [ -e "$CONFIG_DIR" ] && [ ! -L "$CONFIG_DIR" ]; then
     sudo mv "$CONFIG_DIR" "$BACKUP"
 fi
 
-# Stow does not overwrite conflicting regular files (e.g. a hand-written ustreamer.service
-# or moonraker.conf): move them aside, the repository version takes over
+# Stow does not overwrite regular files: move existing ones aside
 for pkg in "${PACKAGES[@]}"; do
     while IFS= read -r -d '' file; do
         target="/${file#"$REPO/$pkg/"}"
-        # sudo: some directories (e.g. /etc/polkit-1/rules.d) are not readable by a regular user
         if sudo test -f "$target" && ! sudo test -L "$target"; then
             echo "Moving existing $target to $target.bak"
             sudo mv "$target" "$target.bak"
@@ -94,7 +82,7 @@ done
 
 sudo stow --dir="$REPO" --target=/ --restow "${PACKAGES[@]}"
 
-# Host-specific Moonraker settings are not tracked: start from the example
+# Host-specific Moonraker settings are not tracked, start from the example
 if [ ! -e /etc/klipper/moonraker-local.conf ]; then
     sudo install -m 644 "$REPO/examples/moonraker-local.conf.example" /etc/klipper/moonraker-local.conf
     echo "Created /etc/klipper/moonraker-local.conf: add your CORS domains to it"
@@ -105,19 +93,12 @@ sudo chgrp -R klipper "$CONFIG_SRC"
 sudo chmod -R g+rwX "$CONFIG_SRC"
 sudo find "$CONFIG_SRC" -type d -exec chmod g+s {} +
 
-# Replace a symlink left by an older Stow layout with a root-owned copy
-if sudo test -L /etc/polkit-1/rules.d/49-moonraker.rules; then
-    sudo rm /etc/polkit-1/rules.d/49-moonraker.rules
-fi
+# Copied, not linked: the rule grants system privileges and must be owned by root
 sudo install -m 644 -o root -g root "$REPO/polkit/49-moonraker.rules" /etc/polkit-1/rules.d/49-moonraker.rules
 
 sudo systemctl daemon-reload
-# Note: never `systemctl disable ustreamer`: for a Stow symlinked unit it deletes the symlink itself.
-# Drop the boot link left by an earlier `enable` instead.
-sudo rm -f /etc/systemd/system/multi-user.target.wants/ustreamer.service
-
-# The camera is not enabled at boot: it stays off until started from Fluidd (it gets warm).
-# An already running ustreamer is restarted to pick up unit changes.
+# ustreamer is deliberately not enabled at boot (the camera warms up while it runs):
+# it is started from Fluidd. If it is already running, restart it to pick up unit changes.
 sudo systemctl try-restart ustreamer.service
 sudo systemctl enable moonraker.service
 
@@ -131,9 +112,8 @@ if [ "$SETUP" = 1 ]; then
     (cd "$REPO/caddy" && sudo docker compose up -d)
 
     sudo systemctl enable --now klipper moonraker
-    echo "Done. Flash the MCU with firmware/build.sh if the board is new."
+    echo "Done. If the board has no Klipper firmware yet, build and flash it with firmware/build.sh."
     exit 0
 fi
 
 echo "Done. Restart Klipper and Moonraker: sudo systemctl restart klipper moonraker"
-echo "Caddy (separate step): cd $REPO/caddy && docker compose up -d  (stop nginx first)"

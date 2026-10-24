@@ -7,7 +7,7 @@
 #                          Moonraker, Fluidd, Mainsail and Caddy
 set -euo pipefail
 
-REPO="$(cd "$(dirname "$0")" && pwd)"
+REPO="$(cd "$(dirname "$0")" && pwd -P)"
 SETUP=0
 case "${1:-}" in
     "") ;;
@@ -73,6 +73,8 @@ fi
 for pkg in "${PACKAGES[@]}"; do
     while IFS= read -r -d '' file; do
         target="/${file#"$REPO/$pkg/"}"
+        # Already resolves to the repository file (e.g. inside the linked config directory)
+        [ "$(sudo readlink -f "$target")" = "$file" ] && continue
         if sudo test -f "$target" && ! sudo test -L "$target"; then
             echo "Moving existing $target to $target.bak"
             sudo mv "$target" "$target.bak"

@@ -4,6 +4,7 @@ klipper
 base-devel
 git
 stow
+acl
 docker
 docker-compose
 v4l-utils

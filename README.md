@@ -13,6 +13,7 @@ ustreamer/etc/systemd/system/ustreamer.service -> /etc/systemd/system/ustreamer.
 moonraker/etc/klipper/moonraker.conf           -> /etc/klipper/moonraker.conf
 moonraker/etc/systemd/system/moonraker.service -> /etc/systemd/system/moonraker.service
 moonraker/etc/polkit-1/rules.d/49-moonraker.rules
+moonraker/var/lib/klipper/printer_data/moonraker.asvc  -> services Fluidd may start/stop (ustreamer)
 examples/moonraker-local.conf.example          -> copied to /etc/klipper/moonraker-local.conf (not tracked)
 caddy/                                         -> not Stow, run straight from the repository
 fluidd/                                        -> not Stow, Fluidd patch + build/install script
@@ -30,9 +31,8 @@ ignored (`.gitignore`).
 
 ```bash
 sudo pacman -S stow
-sudo git clone git@github.com:Ezhkin-Kot/klipper-config /opt/klipper-config
-sudo chown -R "$USER":"$USER" /opt/klipper-config
-cd /opt/klipper-config && ./install.sh
+git clone git@github.com:Ezhkin-Kot/klipper-config ~/klipper-config
+cd ~/klipper-config && ./install.sh
 ```
 
 Existing regular files that Stow would replace (for example a hand-written
@@ -47,8 +47,8 @@ and is not tracked: add the addresses you open Fluidd/Mainsail from.
 On a fresh Arch Linux install:
 
 ```bash
-sudo git clone git@github.com:Ezhkin-Kot/klipper-config /opt/klipper-config
-cd /opt/klipper-config && ./install.sh --setup
+git clone git@github.com:Ezhkin-Kot/klipper-config ~/klipper-config
+cd ~/klipper-config && ./install.sh --setup
 ```
 
 `install.sh` without arguments only lays out the configs and is safe to re-run. `--setup` additionally installs `packages/`, creates the `klipper` user, pins the `klipper` package with
@@ -61,17 +61,24 @@ out the configs, installs Fluidd, Mainsail and starts Caddy. Installers in `scri
 (STM32F407, 32 KiB bootloader offset, 8 MHz crystal, USART3 PB11/PB10). It replaces `make menuconfig`:
 
 ```bash
-cd /opt/klipper-config/firmware && ./build.sh        # sources from /opt/klipper
+cd ~/klipper-config/firmware && ./build.sh        # sources from /opt/klipper
 ```
 
 Copy the resulting `Robin_nano35.bin` to a FAT32 microSD card, power-cycle the printer with the
 card inserted, then power-cycle again after flashing. Rebuild and reflash after every `klipper` package update.
 
+## Switching the camera on and off
+
+The camera sensor streams 24/7 while `ustreamer` runs and gets warm. Moonraker (`[machine]`,
+`moonraker.asvc`) lets Fluidd control the service: Settings -> System (or the System page),
+the `ustreamer` row has Start / Stop. While it is stopped the camera, snapshots and timelapse
+do not work, so start it before a print. The state does not survive a reboot (the unit stays enabled).
+
 ## Caddy
 
 ```bash
 sudo systemctl disable --now nginx
-cd /opt/klipper-config/caddy && docker compose up -d
+cd ~/klipper-config/caddy && docker compose up -d
 docker compose logs --tail 20
 ```
 
@@ -86,7 +93,7 @@ from source and installs it into `/var/www/fluidd`:
 
 ```bash
 sudo pacman -S --needed git nodejs npm
-cd /opt/klipper-config/fluidd && ./install-fluidd.sh        # build and install
+cd ~/klipper-config/fluidd && ./install-fluidd.sh        # build and install
 ```
 
 The build needs about 1 GB of RAM and several minutes of CPU. On a weak board (SBC), build on a

@@ -6,8 +6,9 @@
 #   ./install.sh --setup   first-time setup of a fresh Arch Linux install: packages, klipper
 #                          user, Moonraker, then the same as above, then Fluidd, Mainsail, Caddy
 #
-# The repository must be somewhere the klipper user can read
-# (not under /home/*, e.g. /opt/klipper-config).
+# The repository can live in a home directory (e.g. ~/klipper-config): the klipper user
+# and polkitd must read files through the Stow symlinks, so they are granted traverse
+# (execute only, no listing) access to that home directory.
 # The Moonraker data (history database) is not restored.
 set -euo pipefail
 
@@ -54,6 +55,19 @@ if [ "$SETUP" = 1 ]; then
 fi
 
 command -v stow >/dev/null || { echo "stow is required: sudo pacman -S stow"; exit 1; }
+
+# Services read the repository through symlinks; a private home directory (mode 700) blocks them
+case "$REPO" in
+    /home/*)
+        HOME_DIR="$(echo "$REPO" | cut -d/ -f1-3)"
+        command -v setfacl >/dev/null || { echo "setfacl is required: sudo pacman -S acl"; exit 1; }
+        for svc_user in klipper polkitd; do
+            if id "$svc_user" >/dev/null 2>&1; then
+                sudo setfacl -m "u:$svc_user:x" "$HOME_DIR"
+            fi
+        done
+        ;;
+esac
 
 # The config directory must become a single symlink to the repository directory, not a set
 # of per-file symlinks. On SAVE_CONFIG Klipper recreates printer.cfg via rename, which

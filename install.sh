@@ -112,6 +112,10 @@ fi
 sudo install -m 644 -o root -g root "$REPO/polkit/49-moonraker.rules" /etc/polkit-1/rules.d/49-moonraker.rules
 
 sudo systemctl daemon-reload
+# Note: never `systemctl disable ustreamer`: for a Stow symlinked unit it deletes the symlink itself.
+# Drop the boot link left by an earlier `enable` instead.
+sudo rm -f /etc/systemd/system/multi-user.target.wants/ustreamer.service
+
 # The camera is not enabled at boot: it stays off until started from Fluidd (it gets warm).
 # An already running ustreamer is restarted to pick up unit changes.
 sudo systemctl try-restart ustreamer.service

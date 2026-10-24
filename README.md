@@ -76,7 +76,10 @@ the `ustreamer` entry has Start / Stop. While it is stopped the camera, snapshot
 do not work, so start it before a print.
 
 `ustreamer` is not enabled at boot, so after a reboot the camera is off until it is started
-from Fluidd. To start it at boot again: `sudo systemctl enable ustreamer`.
+from Fluidd. To start it at boot again: `sudo systemctl enable ustreamer`. Do not turn the
+autostart off with `systemctl disable`: the unit is a Stow symlink, and `disable` deletes the
+symlink itself (the service then cannot be started). Remove the boot link instead:
+`sudo rm /etc/systemd/system/multi-user.target.wants/ustreamer.service`.
 
 ## Caddy
 

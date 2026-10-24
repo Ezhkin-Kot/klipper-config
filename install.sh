@@ -83,7 +83,8 @@ fi
 for pkg in "${PACKAGES[@]}"; do
     while IFS= read -r -d '' file; do
         target="/${file#"$REPO/$pkg/"}"
-        if [ -f "$target" ] && [ ! -L "$target" ]; then
+        # sudo: some directories (e.g. /etc/polkit-1/rules.d) are not readable by a regular user
+        if sudo test -f "$target" && ! sudo test -L "$target"; then
             echo "Moving existing $target to $target.bak"
             sudo mv "$target" "$target.bak"
         fi

@@ -1,7 +1,9 @@
 [Unit]
 Description=API Server for Klipper
 Requires=klipper.service
-After=network-online.target klipper.service
+# ustreamer is not started by this, but it stays loaded: Moonraker only lists services
+# that systemd has loaded, and an inactive unit nobody references is unloaded
+After=network-online.target klipper.service ustreamer.service
 
 [Service]
 Type=simple

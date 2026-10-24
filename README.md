@@ -9,6 +9,7 @@ packages: inside them the path mirrors the path from `/`, and `install.sh` lays 
 
 ```
 klipper/var/lib/klipper/printer_data/config/   -> /var/lib/klipper/printer_data/config (symlink to the directory)
+klipper/etc/systemd/system/klipper.service.d/override.conf -> /etc/systemd/system/klipper.service.d/ (config path and log)
 ustreamer/etc/systemd/system/ustreamer.service -> /etc/systemd/system/ustreamer.service
 moonraker/etc/klipper/moonraker.conf           -> /etc/klipper/moonraker.conf
 moonraker/etc/systemd/system/moonraker.service -> /etc/systemd/system/moonraker.service
@@ -70,9 +71,12 @@ card inserted, then power-cycle again after flashing. Rebuild and reflash after 
 ## Switching the camera on and off
 
 The camera sensor streams 24/7 while `ustreamer` runs and gets warm. Moonraker (`[machine]`,
-`moonraker.asvc`) lets Fluidd control the service: Settings -> System (or the System page),
-the `ustreamer` row has Start / Stop. While it is stopped the camera, snapshots and timelapse
-do not work, so start it before a print. The state does not survive a reboot (the unit stays enabled).
+`moonraker.asvc`) lets Fluidd control the service: three-dots menu in the top right corner,
+the `ustreamer` entry has Start / Stop. While it is stopped the camera, snapshots and timelapse
+do not work, so start it before a print.
+
+`ustreamer` is not enabled at boot, so after a reboot the camera is off until it is started
+from Fluidd. To start it at boot again: `sudo systemctl enable ustreamer`.
 
 ## Caddy
 
